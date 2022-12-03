@@ -15,5 +15,4 @@ pycodestyle==2.10.0
 pyparsing==3.0.9
 pytest==7.2.0
 tomli==2.0.1
--e git+https://github.com/KyleKant/practice_flask.git@137bf504e0f30909447c0f8db08221350b44f482#egg=web_server
 Werkzeug==2.2.2
