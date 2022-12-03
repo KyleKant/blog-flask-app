@@ -1,0 +1,101 @@
+{% extends "base.html" %} {% block header %}
+<h1>{% block title %} Edit Post {% endblock title %}</h1>
+{% endblock header %} {% block content %}
+<form action="" method="post">
+  <label for="title">Title</label>
+  <input
+    type="text"
+    name="title"
+    id="title"
+    class="title"
+    placeholder="Please enter title of post"
+    value="{{request.form['title'] or post['title']}}"
+  />
+  <label for="content">Content</label>
+  <textarea
+    name="content"
+    id="content"
+    cols="30"
+    rows="20"
+    class="content"
+    placeholder="Please enter content of post"
+  >
+{{request.form['body'] or post['body']}}</textarea
+  >
+  <div class="row justify-content-md-end">
+    <div class="col col-md-auto">
+      <a href="{{url_for('blog.index')}}" class="cancel" id="cancel">
+        <button type="button" class="btn btn-secondary">Cancel</button>
+      </a>
+    </div>
+    <div class="col col-md-auto">
+      <input type="submit" value="Save" class="btn btn-primary" />
+    </div>
+  </div>
+</form>
+<div class="row justify-content-md-end">
+  <div class="col col-md-auto">
+    <!-- Button trigger modal -->
+    <button
+      type="button"
+      class="btn btn-danger"
+      data-bs-toggle="modal"
+      data-bs-target="#staticBackdrop"
+    >
+      Delete
+    </button>
+
+    <!-- Modal -->
+    <div
+      class="modal fade"
+      id="staticBackdrop"
+      data-bs-backdrop="static"
+      data-ds-keyboard="false"
+      tabindex="-1"
+      aria-labelledby="staticBackdropLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="staticBackdropLabel">Delete Post</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">Do you want to delete this post</div>
+          <div class="modal-footer">
+            <form
+              action="{{url_for('blog.delete', id=post['id'])}}"
+              method="post"
+            >
+              <div class="row justify-content-md-end">
+                <div class="col col-sm-auto">
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                  >
+                    No
+                  </button>
+                </div>
+                <div class="col col-sm-auto">
+                  <input
+                    type="submit"
+                    value="Delete"
+                    class="btn btn-danger delete"
+                    id="delete"
+                  />
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

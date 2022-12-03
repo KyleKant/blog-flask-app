@@ -1,0 +1,34 @@
+{% extends "base.html" %} {% block header %}
+<h1>{% block title %} New Post {% endblock title %}</h1>
+{% endblock header %} {% block content %}
+<form action="" method="post">
+  <label for="title">Title</label>
+  <input
+    type="text"
+    name="title"
+    id="title"
+    placeholder="Please enter title of post"
+    value="{{request.form['title']}}"
+  />
+  <label for="content">Content</label>
+  <textarea
+    name="content"
+    id="content"
+    cols="30"
+    rows="20"
+    placeholder="Please enter content of post here."
+  >
+{{request.form['content']}}</textarea
+  >
+  <div class="row justify-content-md-end">
+    <div class="col col-sm-auto">
+      <a href="{{url_for('blog.index')}}" class="cancel" id="cancel"
+        ><input type="button" value="Cancel"
+      /></a>
+    </div>
+    <div class="col col-sm-auto">
+      <input type="submit" value="Save" class="btn btn-primary" id="save" />
+    </div>
+  </div>
+</form>
+{% endblock content %}
