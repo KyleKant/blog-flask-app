@@ -1,6 +1,6 @@
 """
     You need to run init-db again to create the database in the instance folder by command following:
-    flask --app web_server init-db
+    flask --app blog init-db
     """
 import os
 import secrets
