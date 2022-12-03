@@ -12,7 +12,7 @@ def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY='9d25b5816e1e806a349030511bcd87ecc9e5190ed40ec0151f3fd015a0bc372c',
-        DATABASE=os.path.join(app.instance_path, 'web_server.sqlite'),
+        DATABASE=os.path.join(app.instance_path, 'blog.sqlite'),
     )
     if test_config == None:
         # Load the instance config, if it exists, when not testing
