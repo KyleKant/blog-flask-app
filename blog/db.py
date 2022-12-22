@@ -1,4 +1,5 @@
 import sqlite3
+import MySQLdb
 import click
 from pprint import pprint
 from flask import current_app, g
@@ -6,11 +7,16 @@ from flask import current_app, g
 
 def get_db():
     if 'db' not in g:
-        g.db = sqlite3.connect(
-            current_app.config['DATABASE'],
-            detect_types=sqlite3.PARSE_DECLTYPES,
+        g.db = MySQLdb.connect(
+            host='localhost',
+            user='root',
+            passwd='1234!@#$',
+            db='blog_db',
+            # database=current_app.config['DATABASE']
+            # current_app.config['DATABASE'],
+            # detect_types=sqlite3.PARSE_DECLTYPES,
         )
-        g.db.row_factory = sqlite3.Row
+        # g.db.row_factory = sqlite3.Row
     return g.db
 
 
@@ -22,8 +28,22 @@ def close_db(e=None):
 
 def init_db():
     db = get_db()
-    with current_app.open_resource('schema.sql') as f:
-        db.executescript(f.read().decode('utf8'))
+    cursor = db.cursor()
+    with current_app.open_resource('blog_flask_conn.session.sql') as f:
+        sqlfile = f.read().decode('utf-8')
+        f.close()
+    sqlcommand = sqlfile.split(';\r\n')
+    # print(sqlcommand)
+    for command in sqlcommand:
+        try:
+            if command.strip() != '':
+                cursor.execute(command)
+                print(f'command: {command} is executed')
+        except IOError:
+            print(f'Command is skipped: {IOError}')
+    db.commit()
+    
+        # cursor.executescript(f.read().decode('utf8'))
 
 
 @click.command('init_db')

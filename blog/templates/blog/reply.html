@@ -1,3 +1,67 @@
-{% extends "base.html" %} {% block header %}
-<h1>{% block title %} Post - Reply {% endblock title %}</h1>
-{% endblock header %} {% block content %} asdfasd {% endblock content %}
+{% extends "base.html" %}{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css" />
+<script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+{% endblock head %} {% block header %}
+<div class="row justify-content-md-end">
+  <div class="col col-md-auto">
+    <h1>{% block title %} Post - Reply {% endblock title %}</h1>
+  </div>
+</div>
+{% endblock header %} {% block content %}
+<div class="">
+  <h4 class="post-title">
+    Post Title:
+    <a href="{{url_for('blog.post', id=post['id'], title=post['title'])}}"
+      >{{post['title']}}</a
+    >
+  </h4>
+  <h4 class="post-content">Post Content:</h4>
+  <p>{{post['body']|markdown}}</p>
+</div>
+<hr />
+<form action="" method="post">
+  <div class="row justify-content-md-end">
+    <label for="reply">Reply</label>
+  </div>
+  <div class="row justify-content-md-end">
+    <textarea
+      name="reply"
+      id="reply"
+      cols="30"
+      rows="10"
+      class="reply"
+      placeholder="Please enter your reply"
+    >
+    </textarea>
+  </div>
+
+  <div class="row justify-content-md-end">
+    <div class="col col-sm-auto">
+      <a href="{{url_for('blog.index')}}" class="cancel" id="cancel"
+        ><button type="button" class="btn btn-secondary">Cancel</button></a
+      >
+    </div>
+    <div class="col col-sm-auto">
+      <input type="submit" value="reply" class="reply btn btn-primary" />
+    </div>
+  </div>
+</form>
+{% endblock content %} {% block javascript %}
+<script>
+  const editor = new EasyMDE({
+    blockStyles: {
+      bold: "__",
+      italic: "_",
+    },
+    lineWrapping: true,
+    minHeight: "500px",
+
+    shortcuts: {
+      drawTable: "Cmd-Alt-T",
+    },
+    showIcons: ["code", "table"],
+    tabSize: 4,
+    toolbarButtonClassPrefix: "mde",
+  });
+</script>
+{% endblock javascript %}

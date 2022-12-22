@@ -1,4 +1,7 @@
-{% extends "base.html" %} {% block header %}
+{% extends "base.html" %} {% block head %}
+<link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css" />
+<script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+{% endblock head %} {% block header %}
 <h1>{% block title %} New Post {% endblock title %}</h1>
 {% endblock header %} {% block content %}
 <form action="" method="post">
@@ -17,9 +20,7 @@
     cols="30"
     rows="20"
     placeholder="Please enter content of post here."
-  >
-{{request.form['content']}}</textarea
-  >
+  ></textarea>
   <div class="row justify-content-md-end">
     <div class="col col-sm-auto">
       <a href="{{url_for('blog.index')}}" class="cancel" id="cancel"
@@ -31,4 +32,22 @@
     </div>
   </div>
 </form>
-{% endblock content %}
+{% endblock content %} {% block javascript %}
+<script>
+  const editor = new EasyMDE({
+    blockStyles: {
+      bold: "__",
+      italic: "_",
+    },
+    lineWrapping: true,
+    minHeight: "500px",
+
+    shortcuts: {
+      drawTable: "Cmd-Alt-T",
+    },
+    showIcons: ["code", "table"],
+    tabSize: 4,
+    toolbarButtonClassPrefix: "mde",
+  });
+</script>
+{% endblock javascript %}

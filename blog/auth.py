@@ -1,35 +1,64 @@
 import functools
-from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
+import os
+from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for, make_response
 from werkzeug.security import check_password_hash, generate_password_hash
+from flask_mail import Message
+from datetime import datetime
 from blog.db import get_db
+from blog import mail
+from blog.token import generate_confirmation_token, confirm_token
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
-# print(help(flash))
 
 
 @bp.route('/register', methods=('GET', 'POST'))
 def register_user():
     if request.method == 'POST':
         username = request.form['username']
+        email = request.form['email']
         password = request.form['password']
+        password_confirm = request.form['passwordConfirm']
+        registered_at = datetime.now()
+        confirmed = False
         db = get_db()
+        cursor = db.cursor()
         error = None
         if not username:
             error = 'Username is required.'
+        elif not email:
+            error = 'Email is required.'
         elif not password:
             error = 'Password is required.'
+        elif password != password_confirm:
+            error = 'Password doesn\'t match.'
         if error == None:
+            token = generate_confirmation_token(email=email)
+            confirm_url = url_for('auth.confirmed_email',
+                                  token=token, _external=True)
+            with open(os.path.join(os.path.dirname(__file__),
+                                   'templates\\auth\\verification_email_subject.txt'), "r") as f:
+                subject = f.read()
+                f.close()
+            with open(os.path.join(os.path.dirname(__file__), 'templates\\auth\\confirm_email.html'), 'r') as f:
+                message = f.read()
+                f.close()
+            message_body = render_template(
+                'auth/confirm_email.html', username=username, confirm_url=confirm_url)
+            msg = Message(subject, recipients=[email], html=message_body,)
+            mail.send(msg)
+
             try:
-                print('update user table')
-                db.execute(
-                    'INSERT INTO users (username, password) VALUES (?, ?)',
-                    (username, generate_password_hash(password))
+                cursor.execute(
+                    'INSERT INTO users (username, email, password, registered_at, confirmed) VALUES (%s, %s, %s, %s, %s)',
+                    (username, email, generate_password_hash(
+                        password), registered_at, confirmed)
                 )
                 db.commit()
             except db.IntegrityError:
-                error = f'User {username} is already registered.'
+                error = f'User have {email} or {username} is already registered.'
             else:
-                return redirect(url_for('auth.login'))
+                print('user table has been updated.')
+                return redirect(url_for('auth.send_confirmation_email'))
         flash(error)
     return render_template('auth/register_user.html')
 
@@ -40,12 +69,21 @@ def login():
         username = request.form['username']
         password = request.form['password']
         db = get_db()
+        cursor = db.cursor(0)
         error = None
-        user = db.execute(
-            'SELECT * FROM users WHERE username = ?', (username,)
-        ).fetchone()
+        cursor.execute(
+            'SELECT * FROM users WHERE username = %s', (username,)
+        )
+        user_value_dict = cursor.fetchone()
+        user_key_dict = ('id', 'username', 'email', 'password',
+                         'registered_at', 'confirmed', 'confirmed_at')
+        try:
+            user = dict(zip(user_key_dict, user_value_dict))
+        except TypeError:
+            print('Users table is empty!')
+            user = None
         if user is None:
-            error = 'Incorrect username.'
+            error = 'Incorrect username or not exists.'
         elif not check_password_hash(user['password'], password):
             error = 'Incorrect password.'
         if error is None:
@@ -58,13 +96,24 @@ def login():
 
 @bp.before_app_request
 def load_logged_in_user():
+    # session.clear()
     user_id = session.get('user_id')
     if user_id is None:
         g.user = None
     else:
-        g.user = get_db().execute(
-            'SELECT * FROM users WHERE id =?', (user_id,)
-        ).fetchone()
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute(
+            'SELECT * FROM users WHERE id =%s', (user_id,)
+        )
+        user_value_dict = cursor.fetchone()
+        try:
+            user_key_dict = ('id', 'username', 'email', 'password',
+                             'registered_at', 'confirmed', 'confirmed_at')
+            g.user = dict(zip(user_key_dict, user_value_dict))
+        except TypeError:
+            g.user = None
+            print('Database is empty!')
 
 
 def login_required(view):
@@ -80,3 +129,194 @@ def login_required(view):
 def logout():
     session.clear()
     return redirect(url_for('blog.index'))
+
+
+@bp.route('/send_confirmation_email', methods=('GET', 'POST'))
+def send_confirmation_email():
+    return render_template('auth/send_confirmation_email.html')
+
+
+@bp.route('/confirmed_email/<token>')
+def confirmed_email(token):
+    error = None
+    email = confirm_token(token=token)
+    if email is False:
+        error = 'The confirmation link is invalid or has expried.'
+    else:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute(
+            'SELECT * FROM users WHERE email=%s',
+            (email,)
+        )
+        user_value_dict = cursor.fetchone()
+        user_key_dict = ('id', 'username', 'email', 'password',
+                         'registered_at', 'confirmed', 'confirmed_at')
+        try:
+            user = dict(zip(user_key_dict, user_value_dict))
+        except TypeError:
+            user = None
+            print(f'Email {email} is not exists.')
+        if user['confirmed']:
+            flash(f'Email {email} already comnfirmed. Please login.')
+        else:
+            user['confirmed'] = True
+            user['confirmed_at'] = datetime.now()
+            cursor.execute(
+                'UPDATE users SET confirmed=%s, confirmed_at=%s WHERE email=%s',
+                (user['confirmed'], user['confirmed_at'], user['email'])
+            )
+            db.commit()
+    if error is not None:
+        flash(error)
+    else:
+        flash(f'Email {email} has been confirmed.')
+    return redirect(url_for('auth.unconfirmed_email'))
+
+
+@bp.route('/resend_verification_email', methods=('GET', 'POST'))
+@login_required
+def resend_verification_email():
+    token = generate_confirmation_token(g.user['email'])
+    confirm_url = url_for(
+        'auth.confirmed_email', token=token, _external=True)
+    with open(os.path.join(os.path.dirname(__file__), 'templates\\auth\\verification_email_subject.txt'), 'r') as f:
+        subject = f.read()
+        f.close()
+    with open(os.path.join(os.path.dirname(__file__), 'templates\\auth\\confirm_email.html'), 'r') as f:
+        message = f.read()
+        f.close()
+    message_html = render_template(
+        'auth/confirm_email.html', username=g.user['username'], confirm_url=confirm_url)
+    msg = Message(subject=subject, recipients=[
+                  g.user['email'],], html=message_html)
+    mail.send(msg)
+    flash('A new confirmation email has been sent to your email.')
+    return redirect(url_for('auth.unconfirmed_email'))
+
+
+@bp.route('/unconfirmed_email', methods=('GET', 'POST'))
+@login_required
+def unconfirmed_email():
+    if g.user['confirmed']:
+        return redirect(url_for('blog.index'))
+    flash('Please confirm your account.')
+    return render_template('auth/unconfirmed_email.html')
+
+
+def check_confirmed_email(func):
+    @functools.wraps(func)
+    def decorated_func(*args, **kwargs):
+        if g.user['confirmed'] is False:
+            flash('Please confirm your account.')
+            return redirect(url_for('auth.unconfirmed_email'))
+        return func(*args, **kwargs)
+    return decorated_func
+
+
+@bp.route('/reset_password', methods=('GET', 'POST'))
+def reset_password():
+    if request.method == 'POST':
+        email = request.form['email']
+        token = generate_confirmation_token(email=email)
+        confirm_url = url_for('auth.confirmed_reset_password',
+                              token=token, _external=True)
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute(
+            'SELECT * FROM users WHERE email=%s',
+            (email,)
+        )
+        user_value_dict = cursor.fetchone()
+        user_key_dict = ('id', 'username', 'email', 'password',
+                         'registered_at', 'confirmed', 'confirmed_at')
+        try:
+            user = dict(zip(user_key_dict, user_value_dict))
+        except TypeError:
+            user = None
+        if user == None:
+            flash(f'Email address: {email} is not exists.')
+        else:
+            with open(os.path.join(
+                os.path.dirname(__file__),
+                'templates/auth/reset_password/reset_password_subject.txt'
+            ), 'r') as f:
+                subject = f.read()
+                f.close()
+            message_html = render_template(
+                'auth/reset_password/reset_password_email.html',
+                confirm_url=confirm_url,
+                email=email,
+                username=user['username']
+            )
+            msg = Message(subject=subject, recipients=[
+                          email,], html=message_html)
+            mail.send(msg)
+            return redirect(url_for('auth.send_reset_password_email'))
+    return render_template('auth/reset_password/reset_password.html')
+
+
+@bp.route('send_reset_password_email', methods=('GET', 'POST'))
+def send_reset_password_email():
+    return render_template('auth/reset_password/send_reset_password_email.html')
+
+
+@bp.route('/reset_password/confirmed_reset_password/<token>', methods=('GET', 'POST'))
+def confirmed_reset_password(token):
+    error = None
+    email = confirm_token(token)
+    if email == False:
+        error = 'expried'
+        flash('Link has expried')
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute(
+        'SELECT * FROM users WHERE email=%s',
+        (email,)
+    )
+    user_value_dict = cursor.fetchone()
+    user_key_dict = ('id', 'username', 'email', 'password',
+                     'register_at', 'confirmed', 'confirmed_at')
+    try:
+        user = dict(zip(user_key_dict, user_value_dict))
+    except TypeError:
+        user = None
+    if user == None:
+        flash(f'Email address: {email} is not exists.')
+    elif error == None:
+        return redirect(url_for('auth.set_new_password'))
+    return redirect(url_for('auth.reset_password'))
+
+
+@bp.route('/set_new_password', methods=('GET', 'POST'))
+def set_new_password():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['new_password']
+        repeat_password = request.form['repeat_new_password']
+        error = None
+        if not email:
+            error = 'Email is required.'
+        elif not password:
+            error = 'Password is required.'
+        elif not repeat_password:
+            error = 'Repeat password is required.'
+        elif password != repeat_password:
+            error = 'Password and repeat password is not match.'
+        if error == None:
+            db = get_db()
+            cursor = db.cursor()
+            cursor.execute(
+                'UPDATE users SET password=%s WHERE email=%s',
+                (generate_password_hash(password=password), email)
+            )
+            db.commit()
+            return redirect(url_for('auth.login'))
+        flash(error)
+    return render_template('auth/reset_password/set_new_password.html')
+
+
+@bp.route('/resend_reset_password_email', methods=('GET', 'POST'))
+def resend_reset_password_email():
+    # print(g.user['email'])
+    return render_template('auth/reset_password/resend_reset_password_email.html')

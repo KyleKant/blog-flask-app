@@ -8,19 +8,32 @@ body {
   margin: 0 auto;
   background: white;
   font-size: 0.85rem;
+  border: 1px;
 }
 h1 {
   font-family: serif;
   color: #377ba8;
-  margin: 1rem 0;
+  margin: 0.5rem 0;
   font-size: 1.5rem;
+}
+h4 {
+  font-family: serif;
+  margin: 0.5rem 0;
+  font-size: 1.25rem;
 }
 .btn {
   padding: 0.2rem 0.25rem;
   font-size: 0.85rem;
 }
-a {
+h1 a,
+li a {
   color: #377ba8;
+  text-decoration: none;
+}
+
+h4 a {
+  color: whitesmoke;
+  text-decoration: none;
 }
 hr {
   border: none;
@@ -115,4 +128,47 @@ input.danger {
 input[type="submit"] {
   align-self: start;
   min-width: 10em;
+}
+
+.dropdown-menu {
+  min-width: auto;
+}
+
+pre {
+  background-color: black;
+}
+p {
+  margin-bottom: auto;
+}
+div.about {
+  margin-bottom: 1em;
+}
+.created_at {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+i {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+.row {
+  margin-bottom: 0.25rem;
+}
+.display {
+  display: contents;
+}
+.width-1per {
+  width: 1%;
+  padding: 0%;
+}
+.no-padding-left {
+  padding-left: 0%;
+}
+
+.reply-footer > li {
+  display: inline-block;
+  margin-top: 5px;
+  margin-right: 7px;
+  font-size: 0.75rem;
 }

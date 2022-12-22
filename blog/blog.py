@@ -2,38 +2,58 @@ from flask import Blueprint, flash, g, redirect, render_template, url_for, reque
 import functools
 from blog.db import get_db
 from datetime import datetime
-from blog.auth import login_required
-
+from blog.auth import login_required, check_confirmed_email
+from flaskext.markdown import Markdown
 bp = Blueprint('blog', __name__)
 
 
 @bp.route('/', methods=('GET', 'POST'))
 def index():
-    if request.method == 'POST':
-        print('Delete post')
-        delete = request.form
-        print(delete)
-        if delete == 'delete':
-            pass
-
     db = get_db()
-    posts = db.execute(
+    cursor = db.cursor()
+    cursor.execute(
         '''SELECT p.id, title, body, created, author_id, username FROM post p JOIN users u ON p.author_id = u.id ORDER BY created DESC'''
-    ).fetchall()
-
+    )
+    posts_list = cursor.fetchall()
+    posts = []
+    posts_key_dict = ('id', 'title', 'body', 'created',
+                      'author_id', 'username')
+    for posts_value_dict in posts_list:
+        posts.append(dict(zip(posts_key_dict, posts_value_dict)))
     response = make_response(render_template('blog/index.html', posts=posts))
     return response
 
 
+@bp.route('/<int:id>/<title>', methods=('GET', 'POST'))
+@login_required
+@check_confirmed_email
+def post(id, title):
+    post = get_post(id)
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute(
+        'SELECT * FROM reply'
+    )
+    replys_tuple = cursor.fetchall()
+    reply_key_dict = ('id', 'created_by', 'created_at', 'post_id', 'reply')
+    replys = []
+    for reply_value_dict in replys_tuple:
+        replys.append(dict(zip(reply_key_dict, reply_value_dict)))
+    return render_template('blog/post.html', post=post, replys=replys)
+
+
 @bp.route('/newpost', methods=('GET', 'POST'))
 @login_required
+@check_confirmed_email
 def newpost():
     if request.method == 'POST':
         author_id = session['user_id']
         title = request.form['title']
         content = request.form['content']
         created = datetime.now()
+        votes = 0
         db = get_db()
+        cursor = db.cursor()
         error = None
         if not title:
             error = 'Title is required.'
@@ -43,9 +63,9 @@ def newpost():
             flash(error)
         if error == None:
             try:
-                db.execute(
-                    'INSERT INTO post (author_id, created, title, body) VALUES (?, ?, ?, ?)',
-                    (author_id, created, title, content)
+                cursor.execute(
+                    'INSERT INTO post (author_id, created, title, body, votes) VALUES (%s, %s, %s, %s, %s)',
+                    (author_id, created, title, content, votes)
                 )
                 db.commit()
             except db.Error:
@@ -57,15 +77,47 @@ def newpost():
 
 def get_post(id, check_author=True):
     db = get_db()
-    post = db.execute(
-        'SELECT p.id, title, body, created, author_id, username FROM post p JOIN users u ON p.author_id = u.id WHERE p.id = ?', (
-            id,)
-    ).fetchone()
+    cursor = db.cursor()
+    cursor.execute(
+        'SELECT p.id, title, body, created, author_id, username, votes FROM post p JOIN users u ON p.author_id = u.id WHERE p.id = %s',
+        (id,)
+    )
+    post_value_dict = cursor.fetchone()
+    post_key_dict = ('id', 'title', 'body', 'created',
+                     'author_id', 'username', 'votes')
+    try:
+        post = dict(zip(post_key_dict, post_value_dict))
+    except TypeError as err:
+        print('Table post is empty.')
+        post = None
     if post is None:
         abort(404, f'Post id {id} doesn\'t exist.')
-    if check_author and post['author_id'] != g.user['id']:
-        abort(403)
+    # if check_author and post['author_id'] != g.user['id']:
+    #     abort(403)
     return post
+
+
+def get_reply(reply_id, post_id, check_author=True):
+    # post = get_post(post_id)
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute(
+        'SELECT r.id, reply, created_by, created_at, post_id FROM reply r JOIN users u ON r.created_by = u.username JOIN post p ON r.post_id = p.id WHERE r.id = %s',
+        (reply_id,)
+    )
+    reply_value_dict = cursor.fetchone()
+
+    reply_key_dict = ('id', 'reply', 'created_by', 'created_at', 'post_id')
+    try:
+        reply = dict(zip(reply_key_dict, reply_value_dict))
+    except TypeError:
+        print('Reply table is empty.')
+        reply = None
+    if reply is None:
+        abort(404, f'Reply id {reply_id} doesn\'t exists.')
+    if check_author and reply['created_by'] != g.user['username']:
+        abort(403)
+    return reply
 
 
 @bp.route('/post/<int:id>/edit', methods=('GET', 'POST'))
@@ -77,6 +129,7 @@ def edit(id):
         body = request.form['content']
         error = None
         db = get_db()
+        cursor = db.cursor()
         if not title:
             error = 'Title is required.'
         elif not body:
@@ -84,8 +137,8 @@ def edit(id):
         if error is not None:
             flash(error)
         else:
-            db.execute(
-                'UPDATE post SET title = ?, body = ? WHERE id = ?', (
+            cursor.execute(
+                'UPDATE post SET title = %s, body = %s WHERE id = %s', (
                     title, body, id)
             )
             db.commit()
@@ -98,17 +151,19 @@ def edit(id):
 def delete(id):
     get_post(id)
     db = get_db()
-    db.execute(
-        'DELETE FROM post WHERE id = ?', (id,)
+    cursor = db.cursor()
+    cursor.execute(
+        'DELETE FROM post WHERE id = %s', (id,)
     )
     db.commit()
-    table_post_exist = db.execute(
+    cursor.execute(
         'SELECT EXISTS (SELECT * FROM post)'
-    ).fetchall()[0][0]
-    if not table_post_exist:
+    )
+    table_is_empty = cursor.fetchall()[0][0]
+    if not table_is_empty:
         print('post table is empty')
         db.execute(
-            'UPDATE sqlite_sequence SET seq = 0 WHERE name = ?', ('post',)
+            'ALTER TABLE post AUTO_INCREMENT = 1'
         )
         db.commit()
     else:
@@ -119,4 +174,23 @@ def delete(id):
 @bp.route('/post/<int:id>/reply', methods=('GET', 'POST'))
 @login_required
 def reply(id):
-    return render_template('blog/reply.html')
+    post = get_post(id)
+    if request.method == 'POST':
+        reply = request.form['reply']
+        created_by = g.user['username']
+        created_at = datetime.now()
+        post_id = id
+        error = None
+        if not reply:
+            error = 'Reply is required.'
+        elif error is None:
+            db = get_db()
+            cursor = db.cursor()
+            cursor.execute(
+                'INSERT INTO reply (created_by, created_at, post_id, reply) VALUES (%s, %s, %s, %s)',
+                (created_by, created_at, post_id, reply)
+            )
+            db.commit()
+            return redirect(url_for('blog.index'))
+        flash(error)
+    return render_template('blog/reply.html', post=post)

@@ -1,0 +1,59 @@
+{% extends "base.html" %} {% block header %}
+<h1>{% block title %} {{post['title']}} {% endblock title %}</h1>
+{% endblock header %} {% block content %}
+<div class="row justify-content-md-start">{{post['body']|markdown}}</div>
+<hr />
+<div class="row justify-content-md-start">
+  <div class="col col-md-auto">
+    <a href="{{url_for('blog.reply', id=post['id'])}}" class="btn btn-secondary"
+      >Reply</a
+    >
+  </div>
+</div>
+{% for reply in replys %} {% if post['id'] == reply['post_id'] %}
+<div class="row justify-content-md-start">
+  <div class="row justify-content-md-start">
+    <div class="col col-sm-auto">
+      <img src="{{reply['created_by']|gravatar}}" alt="" class="gravatar" />
+    </div>
+    <div class="width-1per">
+      <i class="fa fa-angle-left"></i>
+    </div>
+    <div class="col col-lg-10 no-padding-left">
+      <div class="card">
+        <div class="card-header">{{reply['created_by']}}</div>
+        <div class="card-body">
+          <p class="card-text">{{reply['reply']|markdown}}</p>
+        </div>
+      </div>
+      <ul class="reply-footer">
+        <li>
+          <span><i class="fa fa-comment"></i> Answer</span>
+        </li>
+        <li>
+          <span>
+            <i class="fa fa-thumbs-up"> </i>
+
+            <span class="like-count">0</span>
+          </span>
+        </li>
+        <li>
+          <span
+            ><i class="fa fa-thumbs-down"></i>
+            <span class="dislike-count">0</span>
+          </span>
+        </li>
+        <li>
+          <span class="created_at"
+            ><i class="fa fa-clock"></i>
+            <i>{{reply['created_at'].strftime('%Y-%m-%d')}}</i></span
+          >
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="row justify-content-md-start">
+  <div class="col col-md-auto"></div>
+</div>
+{% endif %} {% endfor %} {% endblock content %}

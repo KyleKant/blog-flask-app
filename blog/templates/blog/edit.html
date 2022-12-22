@@ -1,4 +1,7 @@
-{% extends "base.html" %} {% block header %}
+{% extends "base.html" %} {% block head %}
+<link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css" />
+<script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+{% endblock head %} {% block header %}
 <h1>{% block title %} Edit Post {% endblock title %}</h1>
 {% endblock header %} {% block content %}
 <form action="" method="post">
@@ -98,4 +101,22 @@
     </div>
   </div>
 </div>
-{% endblock content %}
+{% endblock content %} {% block javascript %}
+<script>
+  const editor = new EasyMDE({
+    blockStyles: {
+      bold: "__",
+      italic: "_",
+    },
+    lineWrapping: true,
+    minHeight: "500px",
+
+    shortcuts: {
+      drawTable: "Cmd-Alt-T",
+    },
+    showIcons: ["code", "table"],
+    tabSize: 4,
+    toolbarButtonClassPrefix: "mde",
+  });
+</script>
+{% endblock javascript %}

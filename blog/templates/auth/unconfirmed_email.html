@@ -1,0 +1,18 @@
+{% extends "base.html" %} {% block header %}
+<h1>{% block title %} Uncomfirmed Email {% endblock title %}</h1>
+{% endblock header %} {% block content %}
+<div class="row justify-content-md-start">
+  <p class="">
+    You have not confirm your account. Please check your inbox (or your spam
+    folder) - you should have received an email with a confirmation link.
+  </p>
+  <p class="">
+    Didn't get the email?
+    <a
+      href="{{url_for('auth.resend_verification_email')}}"
+      class="btn btn-secondary"
+      >Resend</a
+    >.
+  </p>
+</div>
+{% endblock content %}
