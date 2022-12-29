@@ -194,3 +194,45 @@ def reply(id):
             return redirect(url_for('blog.index'))
         flash(error)
     return render_template('blog/reply.html', post=post)
+
+
+def get_my_post(author_id):
+    my_posts = []
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute(
+        'SELECT * FROM post WHERE author_id=%s',
+        (g.user['id'],)
+    )
+    my_post_value_list = cursor.fetchall()
+    my_post_key_dict = ('id', 'author_id', 'created', 'title', 'body', 'votes')
+    try:
+        for my_post_value_dict in my_post_value_list:
+            my_posts.append(dict(zip(my_post_key_dict, my_post_value_dict)))
+    except TypeError:
+        my_posts = None
+    return my_posts
+
+
+@bp.route('/<username>/post', methods=('GET', 'POST'))
+@login_required
+def my_post(username):
+    author_id = g.user['id']
+    my_posts = get_my_post(author_id=author_id)
+    return render_template('blog/my_account/my_post.html', my_posts=my_posts)
+
+
+@bp.route('/post_vote/<id>', methods=('GET', 'POST'))
+def post_vote(id):
+    post = get_post(id)
+    vote = post['votes']
+    if request.method == 'POST':
+        vote += 1
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute(
+            'UPDATE post SET votes=%s WHERE id=%s',
+            (vote, id)
+        )
+        db.commit()
+    return redirect(url_for('blog.post', id=id, title=post['title']))

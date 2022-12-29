@@ -1,13 +1,84 @@
 {% extends "base.html" %} {% block header %}
 <h1>{% block title %} {{post['title']}} {% endblock title %}</h1>
 {% endblock header %} {% block content %}
-<div class="row justify-content-md-start">{{post['body']|markdown}}</div>
+<div class="row justify-content-md-start">
+  <div class="post">{{post['body']|markdown}}</div>
+</div>
+<div class="row">
+  <div class="col col-md-auto vote-btn">
+    <p>Point: {{post['votes']}}</p>
+  </div>
+</div>
+
 <hr />
 <div class="row justify-content-md-start">
   <div class="col col-md-auto">
     <a href="{{url_for('blog.reply', id=post['id'])}}" class="btn btn-secondary"
       >Reply</a
     >
+  </div>
+  <div class="col col-md-auto">
+    <!-- Button trigger modal -->
+    <button
+      type="button"
+      class="btn btn-secondary"
+      data-bs-toggle="modal"
+      data-bs-target="#staticBackdrop"
+    >
+      Vote
+    </button>
+
+    <!-- Modal -->
+    <div
+      class="modal fade"
+      id="staticBackdrop"
+      data-bs-backdrop="static"
+      data-ds-keyboard="false"
+      tabindex="-1"
+      aria-labelledby="staticBackdropLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="staticBackdropLabel">Vote Post</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">Do you want to vote for this post</div>
+          <div class="modal-footer">
+            <form
+              action="{{url_for('blog.post_vote', id=post['id'])}}"
+              method="post"
+            >
+              <div class="row justify-content-md-end">
+                <div class="col col-sm-auto">
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                  >
+                    No
+                  </button>
+                </div>
+                <div class="col col-sm-auto">
+                  <input
+                    type="submit"
+                    value="Vote"
+                    class="btn btn-secondary"
+                    id="vote"
+                  />
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 {% for reply in replys %} {% if post['id'] == reply['post_id'] %}

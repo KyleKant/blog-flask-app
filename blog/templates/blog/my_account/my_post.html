@@ -1,0 +1,14 @@
+{% extends "base.html" %} {% block header %}
+<h1>{% block title %} {{g.user['username']}} - My Post {% endblock title %}</h1>
+{% endblock header %} {% block content %} {% for my_post in my_posts %}
+<div class="row my_post">
+  <a
+    href="{{url_for('blog.post', id=my_post['author_id'], title=my_post['title'])}}"
+    >{{my_post['title']}}
+  </a>
+  <span
+    >Created at <i class="fa fa-clock"> </i><i>{{my_post['created']}}</i>
+  </span>
+  {{my_post['body']|markdown|truncate(150)}}
+</div>
+{% endfor %} {% endblock content %}

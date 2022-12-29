@@ -1,0 +1,55 @@
+{% extends "base.html" %} {% block header %}
+<h1>
+  {% block title %} My Account - {{g.user['username']}} {% endblock title %}
+</h1>
+{% endblock header %} {% block content %}
+<div class="info-account">
+  <div class="row">
+    <h6>Account Information:</h6>
+  </div>
+  <div class="row">
+    <div class="info-box">
+      <p><strong>Username:</strong> {{g.user['username']}}</p>
+      <p><strong>Email:</strong> {{g.user['email']}}</p>
+      <p>
+        <strong>Password: </strong
+        ><a href="{{url_for('auth.change_password')}}" class="change_password"
+          >Change Password</a
+        >
+      </p>
+    </div>
+  </div>
+  <div class="row">
+    <h6>Action Information:</h6>
+  </div>
+  <div class="row">
+    <div class="info-box">
+      <p><strong>The post number:</strong> {{post_num}} post.</p>
+      <p><strong>The reply number:</strong> {{reply_num}} reply.</p>
+    </div>
+  </div>
+  <div class="row">
+    <h6>Recent Posts</h6>
+  </div>
+  <div class="row">
+    <div class="info-box">
+      {% for post in five_first_post %}
+      <a
+        href="{{url_for('blog.post', id = post['id'], title = post['title'])}}"
+        class=""
+        >{{post['title']}}</a
+      >
+      <span
+        >Created at
+        <i class="fa fa-clock"></i>
+        <i>{{post['created']}}</i></span
+      >
+      {% endfor %}
+    </div>
+  </div>
+  <div class="row justify-content-md-start">
+    <div class="col col-md-auto"></div>
+  </div>
+</div>
+
+{% endblock content %}

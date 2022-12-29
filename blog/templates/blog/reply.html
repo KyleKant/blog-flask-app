@@ -16,7 +16,7 @@
     >
   </h4>
   <h4 class="post-content">Post Content:</h4>
-  <p>{{post['body']|markdown}}</p>
+  <div class="post"><p>{{post['body']|markdown}}</p></div>
 </div>
 <hr />
 <form action="" method="post">
@@ -54,7 +54,7 @@
       italic: "_",
     },
     lineWrapping: true,
-    minHeight: "500px",
+    maxHeight: "300px",
 
     shortcuts: {
       drawTable: "Cmd-Alt-T",

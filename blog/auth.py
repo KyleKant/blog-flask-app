@@ -7,6 +7,7 @@ from datetime import datetime
 from blog.db import get_db
 from blog import mail
 from blog.token import generate_confirmation_token, confirm_token
+from pprint import pprint
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -316,7 +317,74 @@ def set_new_password():
     return render_template('auth/reset_password/set_new_password.html')
 
 
-@bp.route('/resend_reset_password_email', methods=('GET', 'POST'))
-def resend_reset_password_email():
-    # print(g.user['email'])
-    return render_template('auth/reset_password/resend_reset_password_email.html')
+@bp.route('/my_accounts', methods=('GET', 'POST'))
+@login_required
+def my_account():
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute(
+        'SELECT COUNT(id) FROM post WHERE author_id=%s',
+        (g.user['id'],)
+    )
+    post_num = cursor.fetchone()[0]
+    cursor.execute(
+        'SELECT COUNT(id) FROM reply WHERE created_by=%s',
+        (g.user['username'],)
+    )
+    reply_num = cursor.fetchone()[0]
+    cursor.execute(
+        'SELECT * FROM post WHERE author_id=%s ORDER BY created DESC limit 2',
+        (g.user['id'],)
+    )
+    five_first_post_list = cursor.fetchall()
+    five_first_post_key_dict = (
+        'id', 'author_id', 'created', 'title', 'body', 'votes')
+    five_first_post = []
+    try:
+        for five_first_post_value_dict in five_first_post_list:
+            five_first_post.append(dict(
+                zip(five_first_post_key_dict, five_first_post_value_dict)))
+    except TypeError:
+        five_first_post = None
+    pprint(five_first_post)
+    return render_template('auth/my_account.html', post_num=post_num, reply_num=reply_num, five_first_post=five_first_post)
+
+
+@bp.route('/change_password', methods=('GET', 'POST'))
+@login_required
+def change_password():
+    if request.method == 'POST':
+        old_password = request.form['old_password']
+        new_password = request.form['new_password']
+        error = None
+        if not old_password:
+            error = 'Old password is required.'
+        elif not new_password:
+            error = 'New password is required.'
+        if error == None:
+            db = get_db()
+            cursor = db.cursor()
+            cursor.execute(
+                'SELECT * FROM users WHERE id=%s',
+                (g.user['id'],)
+            )
+            user_value_dict = cursor.fetchone()
+            user_key_dict = ('id', 'username', 'email', 'password',
+                             'registered_at', 'confirmed', 'confirmed_at')
+            try:
+                user = dict(zip(user_key_dict, user_value_dict))
+            except TypeError:
+                user = None
+                print('User is not exists.')
+            if user:
+                if not check_password_hash(user['password'], old_password):
+                    flash('The old password is not true, please type password again.')
+                else:
+                    cursor.execute(
+                        'UPDATE users SET password=%s WHERE id=%s',
+                        (generate_password_hash(new_password), g.user['id'],)
+                    )
+                    db.commit()
+                    print(f'Password has been changed to {new_password}')
+                    return redirect(url_for('auth.my_account'))
+    return render_template('auth/change_password/change_password.html')

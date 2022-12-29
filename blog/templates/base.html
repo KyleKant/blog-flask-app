@@ -47,8 +47,15 @@
             class="dropdown-menu dropdown-menu-end"
             aria-labelledby="dropdownMenuButton"
           >
-            <a class="dropdown-item" href="#">Your Posts</a>
+            <a
+              class="dropdown-item"
+              href="{{url_for('blog.my_post', username=g.user['username'])}}"
+              >My Posts</a
+            >
             <a class="dropdown-item" href="#">Your Reply</a>
+            <a class="dropdown-item" href="{{url_for('auth.my_account')}}"
+              >Account</a
+            >
             <a class="dropdown-item" href="{{url_for('auth.logout')}}"
               ><i class="fa fa-sign-out"></i> Log Out</a
             >
