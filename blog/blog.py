@@ -12,11 +12,11 @@ def index():
     db = get_db()
     cursor = db.cursor()
     cursor.execute(
-        '''SELECT p.id, title, body, created, author_id, username FROM post p JOIN users u ON p.author_id = u.id ORDER BY created DESC'''
+        '''SELECT p.id, title, body, created, votes, author_id, username FROM post p JOIN users u ON p.author_id = u.id ORDER BY created DESC'''
     )
     posts_list = cursor.fetchall()
     posts = []
-    posts_key_dict = ('id', 'title', 'body', 'created',
+    posts_key_dict = ('id', 'title', 'body', 'created', 'votes',
                       'author_id', 'username')
     for posts_value_dict in posts_list:
         posts.append(dict(zip(posts_key_dict, posts_value_dict)))
@@ -25,8 +25,8 @@ def index():
 
 
 @bp.route('/<int:id>/<title>', methods=('GET', 'POST'))
-@login_required
-@check_confirmed_email
+# @login_required
+# @check_confirmed_email
 def post(id, title):
     post = get_post(id)
     db = get_db()
@@ -71,8 +71,8 @@ def newpost():
             except db.Error:
                 print(db.Error)
             else:
-                return redirect(url_for('blog.index'))
-    return render_template('blog/newpost.html')
+                return redirect(url_for('blog.my_post', username=g.user['username']))
+    return render_template('blog/my_account/newpost.html')
 
 
 def get_post(id, check_author=True):
@@ -122,6 +122,7 @@ def get_reply(reply_id, post_id, check_author=True):
 
 @bp.route('/post/<int:id>/edit', methods=('GET', 'POST'))
 @login_required
+@check_confirmed_email
 def edit(id):
     post = get_post(id)
     if request.method == 'POST':
@@ -143,11 +144,12 @@ def edit(id):
             )
             db.commit()
             return redirect(url_for('blog.index'))
-    return render_template('blog/edit.html', post=post)
+    return render_template('blog/my_account/edit.html', post=post)
 
 
 @ bp.route('/post/<int:id>/delete', methods=('GET', 'POST'))
 @login_required
+@check_confirmed_email
 def delete(id):
     get_post(id)
     db = get_db()
@@ -173,6 +175,7 @@ def delete(id):
 
 @bp.route('/post/<int:id>/reply', methods=('GET', 'POST'))
 @login_required
+@check_confirmed_email
 def reply(id):
     post = get_post(id)
     if request.method == 'POST':
@@ -193,7 +196,7 @@ def reply(id):
             db.commit()
             return redirect(url_for('blog.index'))
         flash(error)
-    return render_template('blog/reply.html', post=post)
+    return render_template('blog/my_account/reply.html', post=post)
 
 
 def get_my_post(author_id):
@@ -201,7 +204,7 @@ def get_my_post(author_id):
     db = get_db()
     cursor = db.cursor()
     cursor.execute(
-        'SELECT * FROM post WHERE author_id=%s',
+        'SELECT * FROM post WHERE author_id=%s ORDER BY created DESC',
         (g.user['id'],)
     )
     my_post_value_list = cursor.fetchall()
@@ -216,13 +219,17 @@ def get_my_post(author_id):
 
 @bp.route('/<username>/post', methods=('GET', 'POST'))
 @login_required
+@check_confirmed_email
 def my_post(username):
+    print(g.user)
     author_id = g.user['id']
     my_posts = get_my_post(author_id=author_id)
     return render_template('blog/my_account/my_post.html', my_posts=my_posts)
 
 
 @bp.route('/post_vote/<id>', methods=('GET', 'POST'))
+@login_required
+@check_confirmed_email
 def post_vote(id):
     post = get_post(id)
     vote = post['votes']

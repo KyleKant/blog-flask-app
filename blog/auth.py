@@ -319,6 +319,7 @@ def set_new_password():
 
 @bp.route('/my_accounts', methods=('GET', 'POST'))
 @login_required
+@check_confirmed_email
 def my_account():
     db = get_db()
     cursor = db.cursor()
@@ -352,6 +353,7 @@ def my_account():
 
 @bp.route('/change_password', methods=('GET', 'POST'))
 @login_required
+@check_confirmed_email
 def change_password():
     if request.method == 'POST':
         old_password = request.form['old_password']

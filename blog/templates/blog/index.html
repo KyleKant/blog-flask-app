@@ -27,28 +27,7 @@
         by {{post['username']}} on
         <i class="fa fa-clock"></i>
         <i>{{post['created'].strftime('%Y-%m-%d')}}</i>
-      </div>
-    </div>
-    <div class="row justify-content-md-start">
-      <div class="col col-sm-auto">
-        {% if g.user['id'] == post['author_id'] %}
-        <a
-          href="{{url_for('blog.edit', id=post['id'])}}"
-          class="edit"
-          id="edit"
-        >
-          <button type="button" class="btn btn-secondary">Edit</button></a
-        >
-        {% endif %}
-      </div>
-      <div class="col col-sm-auto">
-        <a
-          href="{{url_for('blog.reply', id=post['id'])}}"
-          class="reply"
-          id="reply"
-        >
-          <button class="btn btn-secondary">Reply</button>
-        </a>
+        with {{post['votes']}} points.
       </div>
     </div>
   </header>

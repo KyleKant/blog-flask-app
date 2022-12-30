@@ -1,6 +1,23 @@
 {% extends "base.html" %} {% block header %}
 <h1>{% block title %} {{g.user['username']}} - My Post {% endblock title %}</h1>
-{% endblock header %} {% block content %} {% for my_post in my_posts %}
+{% endblock header %} {% block content %}
+<div class="row">
+  {% if g.user['confirmed'] %}
+  <a href="{{url_for('blog.newpost')}}"
+    ><input class="btn btn-secondary" type="button" value="New Post"
+  /></a>
+  {% elif g.user and g.user['confirmed'] == False %}
+  <p>Your email address has not been validated yet.</p>
+  <p>Please click on Confirm Email button.</p>
+  <a
+    href="{{url_for('auth.unconfirmed_email')}}"
+    class="unconfirmed_email btn btn-secondary"
+    >Confirm Email</a
+  >
+  {% endif %}
+</div>
+{% for my_post in my_posts %}
+
 <div class="row my_post">
   <a
     href="{{url_for('blog.post', id=my_post['author_id'], title=my_post['title'])}}"
@@ -8,7 +25,17 @@
   </a>
   <span
     >Created at <i class="fa fa-clock"> </i><i>{{my_post['created']}}</i>
+    with {{my_post['votes']}} votes.
   </span>
   {{my_post['body']|markdown|truncate(150)}}
+</div>
+<div class="row justify-content-md-start">
+  <div class="col col-sm-auto">
+    {% if g.user['id'] == my_post['author_id'] %}
+    <a href="{{url_for('blog.edit', id=my_post['id'])}}" class="edit" id="edit">
+      <button type="button" class="btn btn-secondary">Edit</button></a
+    >
+    {% endif %}
+  </div>
 </div>
 {% endfor %} {% endblock content %}
