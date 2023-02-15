@@ -4,6 +4,7 @@ from blog.db import get_db
 from datetime import datetime
 from blog.auth import login_required, check_confirmed_email
 from flaskext.markdown import Markdown
+from pprint import pprint
 bp = Blueprint('blog', __name__)
 
 
@@ -20,6 +21,13 @@ def index():
                       'author_id', 'username')
     for posts_value_dict in posts_list:
         posts.append(dict(zip(posts_key_dict, posts_value_dict)))
+    for post in posts:
+        cursor.execute(
+            'SELECT COUNT(id) FROM reply WHERE post_id=%s',
+            (post['id'],)
+        )
+        reply_num = cursor.fetchone()[0]
+        post['reply_num'] = reply_num
     response = make_response(render_template('blog/index.html', posts=posts))
     return response
 
@@ -183,6 +191,8 @@ def reply(id):
         created_by = g.user['username']
         created_at = datetime.now()
         post_id = id
+        votes_up = 0
+        votes_down = 0
         error = None
         if not reply:
             error = 'Reply is required.'
@@ -190,11 +200,11 @@ def reply(id):
             db = get_db()
             cursor = db.cursor()
             cursor.execute(
-                'INSERT INTO reply (created_by, created_at, post_id, reply) VALUES (%s, %s, %s, %s)',
-                (created_by, created_at, post_id, reply)
+                'INSERT INTO reply (created_by, created_at, post_id, reply, votes_up, votes_down) VALUES (%s, %s, %s, %s, %s, %s)',
+                (created_by, created_at, post_id, reply, votes_up, votes_down)
             )
             db.commit()
-            return redirect(url_for('blog.index'))
+            return redirect(url_for('blog.post', id=post_id, title=post['title']))
         flash(error)
     return render_template('blog/my_account/reply.html', post=post)
 
@@ -243,3 +253,9 @@ def post_vote(id):
         )
         db.commit()
     return redirect(url_for('blog.post', id=id, title=post['title']))
+
+
+@bp.route('/<post_id>/<reply_id>', methods=('GET', 'POST'))
+def votes_up(post_id, reply_id):
+    post = get_post(post_id)
+    return redirect(url_for('blog.post', post_id=post_id, title=post['title']))

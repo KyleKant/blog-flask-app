@@ -1,18 +1,6 @@
 {% extends "base.html" %} {% block header %}
 <h1>{% block title %} List All Posts {% endblock title %}</h1>
-{% endblock header %} {% block content %} {% if g.user['confirmed'] %}
-<a href="{{url_for('blog.newpost')}}"
-  ><input class="btn btn-secondary" type="button" value="New Post"
-/></a>
-{% elif g.user and g.user['confirmed'] == False %}
-<p>Your email address has not been validated yet.</p>
-<p>Please click on Confirm Email button.</p>
-<a
-  href="{{url_for('auth.unconfirmed_email')}}"
-  class="unconfirmed_email btn btn-secondary"
-  >Confirm Email</a
->
-{% endif %} {% for post in posts %}
+{% endblock header %} {% block content %} {% for post in posts %}
 <article class="posts" id="posts">
   <header>
     <div>
@@ -24,10 +12,15 @@
         >
       </h1>
       <div class="about" id="about">
-        by {{post['username']}} on
-        <i class="fa fa-clock"></i>
-        <i>{{post['created'].strftime('%Y-%m-%d')}}</i>
-        with {{post['votes']}} points.
+        <div class="row">
+          <div class="col col-md-auto">
+            by {{post['username']}} on
+            <i class="fa fa-clock"></i>
+            <i>{{post['created'].strftime('%Y-%m-%d')}}</i>
+            with {{post['votes']}} points.
+          </div>
+          <div class="col col-md-auto">Reply: {{post['reply_num']}}</div>
+        </div>
       </div>
     </div>
   </header>

@@ -25,55 +25,54 @@
   <body>
     <nav>
       <h1><a href="{{url_for('blog.index')}}">Web Server</a></h1>
-      <ul>
-        {% if g.user %}
-        <div class="dropdown">
-          <button
-            class="btn btn-secondary dropdown-toggle"
-            type="button"
-            id="dropdownMenuButton"
-            data-bs-toggle="dropdown"
-            aria-haspopup="true"
-            aria-expanded="false"
-          >
-            <img
-              src="{{g.user['username']|gravatar(size=25)}}"
-              alt=""
-              class="gravatar"
-            />{{g.user['username']}}
-          </button>
+      {% if g.user %}
+      <div class="dropdown">
+        <button
+          class="btn btn-secondary dropdown-toggle"
+          type="button"
+          id="dropdownMenuButton"
+          data-bs-toggle="dropdown"
+          aria-haspopup="true"
+          aria-expanded="false"
+        >
+          <img
+            src="{{g.user['username']|gravatar(size=25)}}"
+            alt=""
+            class="gravatar"
+          />{{g.user['username']}}
+        </button>
 
-          <div
-            class="dropdown-menu dropdown-menu-end"
-            aria-labelledby="dropdownMenuButton"
+        <div
+          class="dropdown-menu dropdown-menu-end"
+          aria-labelledby="dropdownMenuButton"
+        >
+          <a
+            class="dropdown-item"
+            href="{{url_for('blog.my_post', username=g.user['username'])}}"
+            >My Posts</a
           >
-            <a
-              class="dropdown-item"
-              href="{{url_for('blog.my_post', username=g.user['username'])}}"
-              >My Posts</a
-            >
-            <a class="dropdown-item" href="#">Your Reply</a>
-            <a class="dropdown-item" href="{{url_for('auth.my_account')}}"
-              >Account</a
-            >
-            <a class="dropdown-item" href="{{url_for('auth.logout')}}"
-              ><i class="fa fa-sign-out"></i> Log Out</a
-            >
-          </div>
+          <a class="dropdown-item" href="#">Your Reply</a>
+          <a class="dropdown-item" href="{{url_for('auth.my_account')}}"
+            >Account</a
+          >
+          <a class="dropdown-item" href="{{url_for('auth.logout')}}"
+            ><i class="fa fa-sign-out"></i> Log Out</a
+          >
         </div>
-        {% else %}
-        <li>
-          <a href="{{url_for('auth.register_user')}}"
-            ><i class="fa fa-registered"></i> Register</a
-          >
-        </li>
-        <li>
-          <a href="{{url_for('auth.login')}}"
-            ><i class="fa fa-sign-in"></i> Login</a
-          >
-        </li>
-        {% endif %}
-      </ul>
+      </div>
+      {% else %}
+      <li>
+        <a href="{{url_for('auth.register_user')}}"
+          ><i class="fa fa-registered"></i> Register</a
+        >
+      </li>
+      <li>
+        <a href="{{url_for('auth.login')}}"
+          ><i class="fa fa-sign-in"></i> Login</a
+        >
+      </li>
+
+      {% endif %}
     </nav>
     <section class="content">
       <header>{% block header %} {% endblock header %}</header>

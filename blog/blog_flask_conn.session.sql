@@ -26,8 +26,8 @@ CREATE TABLE reply(
     created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     post_id int NOT NULL,
     reply text NOT NULL,
-    votes_up int NOT NULL,
-    votes_down int NOT NULL,
+    votes_up int NOT NULL DEFAULT 0,
+    votes_down int NOT NULL DEFAULT 0,
     FOREIGN KEY (created_by) REFERENCES users (username),
     FOREIGN KEY (post_id) REFERENCES post (id)
 );
